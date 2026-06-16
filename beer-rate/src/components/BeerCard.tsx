@@ -3,9 +3,18 @@ import type { Beer } from '../types/beer'
 interface BeerCardProps {
   beer: Beer
   rank: number
+  displayRating: number
+  displayRatingsCount: number
+  userRating?: number
 }
 
-export function BeerCard({ beer, rank }: BeerCardProps) {
+export function BeerCard({
+  beer,
+  rank,
+  displayRating,
+  displayRatingsCount,
+  userRating,
+}: BeerCardProps) {
   return (
     <article className="beer-card">
       <div className="rank">#{rank}</div>
@@ -21,8 +30,9 @@ export function BeerCard({ beer, rank }: BeerCardProps) {
         {beer.isRetired && <p className="retired">No longer produced</p>}
       </div>
       <div className="score-block">
-        <div className="score">{beer.rating.toFixed(2)}</div>
-        <div className="ratings">{beer.ratingsCount.toLocaleString()} ratings</div>
+        <div className="score">{displayRating.toFixed(2)}</div>
+        <div className="ratings">{displayRatingsCount.toLocaleString()} ratings</div>
+        {userRating ? <div className="my-rating">Your posted rating: {userRating}/5</div> : null}
       </div>
     </article>
   )

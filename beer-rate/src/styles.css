@@ -38,12 +38,29 @@ a {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .brand {
   font-size: 1.35rem;
   font-weight: 700;
   color: #163e66;
+}
+
+.menu-toggle {
+  border: 1px solid #c8d3df;
+  background: #fff;
+  color: #1b4268;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  display: none;
+}
+
+nav[data-open='false'] .nav-list,
+nav[data-open='true'] .nav-list {
+  display: flex;
 }
 
 .nav-list {
@@ -58,10 +75,27 @@ a {
 
 .nav-list a {
   color: #415a77;
+  padding: 8px 10px;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.nav-list a.active {
+  color: #0f4c81;
+  background: #e9f1f8;
+  font-weight: 700;
 }
 
 .nav-list a:hover {
   color: #163e66;
+  background: #f0f5fa;
+}
+
+#home,
+#top-rated,
+#breweries,
+#help {
+  scroll-margin-top: 84px;
 }
 
 .page {
@@ -93,6 +127,10 @@ a {
   border-radius: 10px;
   overflow: hidden;
   background: #fff;
+}
+
+.content-block {
+  margin-top: 14px;
 }
 
 .tab {
@@ -132,6 +170,54 @@ a {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.rating-panel {
+  margin-top: 16px;
+  background: #ffffff;
+  border: 1px solid #d3dbe4;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.rating-panel h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #173d63;
+}
+
+.rating-form {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 160px) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.field-label {
+  color: #47617c;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.post-button {
+  border: 1px solid #0f4c81;
+  background: #0f4c81;
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.post-button:hover {
+  background: #0d416e;
+}
+
+.post-message {
+  margin: 10px 0 0;
+  color: #25567f;
+  font-weight: 600;
 }
 
 .beer-card {
@@ -201,12 +287,22 @@ a {
 
 .score-block {
   text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
 }
 
 .score {
   font-size: 1.65rem;
   font-weight: 700;
   color: #12375b;
+}
+
+.my-rating {
+  color: #355573;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .empty {
@@ -242,9 +338,32 @@ a {
   color: #4e6278;
 }
 
+.help {
+  margin-top: 24px;
+  background: #ffffff;
+  border: 1px solid #d3dbe4;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.help h2 {
+  margin: 0;
+  color: #173d63;
+}
+
+.help p {
+  margin: 8px 0 0;
+  color: #465d75;
+}
+
 @media (max-width: 860px) {
   .filters {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .rating-form {
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
   }
 
   .beer-card {
@@ -253,16 +372,39 @@ a {
 
   .score-block {
     text-align: left;
+    align-items: flex-start;
   }
 }
 
 @media (max-width: 580px) {
-  .header-inner {
+  .menu-toggle {
+    display: inline-flex;
+  }
+
+  nav {
+    width: 100%;
+  }
+
+  nav[data-open='false'] .nav-list {
+    display: none;
+  }
+
+  nav[data-open='true'] .nav-list {
+    display: flex;
+  }
+
+  .nav-list {
+    width: 100%;
     flex-direction: column;
-    align-items: flex-start;
+    gap: 6px;
+    margin-top: 8px;
   }
 
   .filters {
+    grid-template-columns: 1fr;
+  }
+
+  .rating-form {
     grid-template-columns: 1fr;
   }
 
