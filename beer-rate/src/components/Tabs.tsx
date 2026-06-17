@@ -17,15 +17,6 @@ export function Tabs({ activeTab, onChange }: TabsProps) {
       >
         Top Beers
       </button>
-      <button
-        className={activeTab === 'breweries' ? 'tab active' : 'tab'}
-        type="button"
-        role="tab"
-        aria-selected={activeTab === 'breweries'}
-        onClick={() => onChange('breweries')}
-      >
-        Breweries
-      </button>
     </div>
   )
 }

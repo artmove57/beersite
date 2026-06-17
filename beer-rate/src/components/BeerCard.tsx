@@ -9,6 +9,7 @@ interface BeerCardProps {
   trendingScore: number
   addedCount: number
   userRating?: number
+  onOpenDetails: () => void
 }
 
 export function BeerCard({
@@ -20,9 +21,22 @@ export function BeerCard({
   trendingScore,
   addedCount,
   userRating,
+  onOpenDetails,
 }: BeerCardProps) {
   return (
-    <article className="beer-card">
+    <article
+      className="beer-card beer-card--interactive"
+      role="button"
+      tabIndex={0}
+      onClick={onOpenDetails}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onOpenDetails()
+        }
+      }}
+      aria-label={`Open details for ${beer.name}`}
+    >
       <div className="rank-block">
         <span className="rank">#{rank}</span>
         <span className="rank-subtitle">Top list</span>
@@ -44,7 +58,7 @@ export function BeerCard({
           <span>{beer.ibu} IBU</span>
         </p>
 
-        <p className="description">{beer.description}</p>
+        <p className="description-hint">Click to read full tasting description</p>
 
         <p className="meta ranking-meta">
           Weighted score {weightedScore.toFixed(2)} / Trending {trendingScore.toFixed(2)}

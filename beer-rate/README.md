@@ -20,6 +20,8 @@ It shows top-rated beers using local mock data and simple client-side filters.
 - Working filters for search, style, country, and sorting
 - Local mock beer catalog plus persisted user ratings in SQLite
 - Local API for posting and loading ratings (`/api/ratings`)
+- SQLite schema with `beer_styles`, `beers`, and `ratings` tables
+- Beer styles API endpoint (`/api/styles`) with rating aggregates per style
 - Responsive card layout for mobile and desktop
 
 ## How to run
@@ -46,6 +48,6 @@ It shows top-rated beers using local mock data and simple client-side filters.
 
 ## Notes
 
-- Beer metadata is mock/local data in the frontend.
-- User ratings are persisted in `server/data/ratings.db`.
+- Beer metadata is synchronized into SQLite on API start (`beers` and `beer_styles`).
+- User ratings are persisted in `server/data/ratings.db` (`ratings` table).
 - This is an educational frontend project inspired by a beer rating page.

@@ -10,7 +10,6 @@ interface HeaderProps {
 const links: Array<{ label: string; target: NavTarget }> = [
   { label: 'Discover', target: 'home' },
   { label: 'Top 250', target: 'top-rated' },
-  { label: 'Breweries', target: 'breweries' },
   { label: 'Guide', target: 'help' },
 ]
 

@@ -2,10 +2,8 @@ import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react
 import { BeerCard } from './components/BeerCard'
 import { Filters } from './components/Filters'
 import { Header, type NavTarget } from './components/Header'
-import { Tabs } from './components/Tabs'
 import { beers } from './data/beers'
 
-type TabKey = 'beers' | 'breweries'
 type SortKey = 'weighted' | 'rating' | 'trending' | 'ratingsCount' | 'name'
 type TimeRangeKey = 'all' | 'month' | 'week'
 type RetiredFilter = 'include' | 'active-only'
@@ -38,7 +36,7 @@ interface RankedBeer {
   myRating?: number
 }
 
-const sections: NavTarget[] = ['home', 'top-rated', 'breweries', 'help']
+const sections: NavTarget[] = ['home', 'top-rated', 'help']
 const clientIdStorageKey = 'beer-rate-client-id'
 
 function getOrCreateClientId() {
@@ -93,7 +91,6 @@ function getTimeRangeLabel(timeRange: TimeRangeKey) {
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<TabKey>('beers')
   const [activeSection, setActiveSection] = useState<NavTarget>('home')
   const [search, setSearch] = useState('')
   const [style, setStyle] = useState('All styles')
@@ -110,6 +107,7 @@ function App() {
   const [isPosting, setIsPosting] = useState(false)
   const [isLoadingRatings, setIsLoadingRatings] = useState(true)
   const [apiError, setApiError] = useState('')
+  const [detailsBeer, setDetailsBeer] = useState<RankedBeer | null>(null)
 
   const loadRatingsSummary = useCallback(async () => {
     try {
@@ -189,14 +187,6 @@ function App() {
   )
 
   const navigateToSection = useCallback((target: NavTarget) => {
-    if (target === 'home' || target === 'top-rated') {
-      setActiveTab('beers')
-    }
-
-    if (target === 'breweries') {
-      setActiveTab('breweries')
-    }
-
     window.requestAnimationFrame(() => {
       const targetSection = document.getElementById(target)
       if (targetSection) {
@@ -230,7 +220,7 @@ function App() {
     window.addEventListener('scroll', updateActiveSection, { passive: true })
 
     return () => window.removeEventListener('scroll', updateActiveSection)
-  }, [activeTab])
+  }, [])
 
   useEffect(() => {
     const hashValue = window.location.hash.replace('#', '')
@@ -254,6 +244,21 @@ function App() {
 
     return () => window.clearTimeout(timer)
   }, [postMessage])
+
+  useEffect(() => {
+    if (!detailsBeer) {
+      return
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setDetailsBeer(null)
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [detailsBeer])
 
   const beerOptions = useMemo(
     () => [...beers].sort((a, b) => a.name.localeCompare(b.name)),
@@ -384,34 +389,6 @@ function App() {
     }
   }, [enrichedBeers])
 
-  const breweries = useMemo(() => {
-    const grouped = new Map<
-      string,
-      { country: string; count: number; totalWeightedScore: number; totalRatings: number }
-    >()
-
-    for (const beer of enrichedBeers) {
-      const current = grouped.get(beer.brewery)
-      if (!current) {
-        grouped.set(beer.brewery, {
-          country: beer.country,
-          count: 1,
-          totalWeightedScore: beer.weightedScore,
-          totalRatings: beer.displayRatingsCount,
-        })
-      } else {
-        grouped.set(beer.brewery, {
-          country: current.country,
-          count: current.count + 1,
-          totalWeightedScore: current.totalWeightedScore + beer.weightedScore,
-          totalRatings: current.totalRatings + beer.displayRatingsCount,
-        })
-      }
-    }
-
-    return [...grouped.entries()].sort((a, b) => a[0].localeCompare(b[0]))
-  }, [enrichedBeers])
-
   return (
     <>
       <Header activeSection={activeSection} onNavigate={navigateToSection} />
@@ -440,123 +417,107 @@ function App() {
           </div>
         </section>
 
-        <Tabs activeTab={activeTab} onChange={setActiveTab} />
+        <section id="top-rated" className="content-block" aria-label="Top rated beers">
+          <Filters
+            search={search}
+            style={style}
+            country={country}
+            sort={sort}
+            timeRange={timeRange}
+            minRatings={minRatings}
+            retiredFilter={retiredFilter}
+            styleOptions={styleOptions}
+            countryOptions={countryOptions}
+            onSearchChange={setSearch}
+            onStyleChange={setStyle}
+            onCountryChange={setCountry}
+            onSortChange={(value) => setSort(value as SortKey)}
+            onTimeRangeChange={(value) => setTimeRange(value as TimeRangeKey)}
+            onMinRatingsChange={setMinRatings}
+            onRetiredFilterChange={(value) => setRetiredFilter(value as RetiredFilter)}
+          />
 
-        {activeTab === 'beers' ? (
-          <section id="top-rated" className="content-block" aria-label="Top rated beers">
-            <Filters
-              search={search}
-              style={style}
-              country={country}
-              sort={sort}
-              timeRange={timeRange}
-              minRatings={minRatings}
-              retiredFilter={retiredFilter}
-              styleOptions={styleOptions}
-              countryOptions={countryOptions}
-              onSearchChange={setSearch}
-              onStyleChange={setStyle}
-              onCountryChange={setCountry}
-              onSortChange={(value) => setSort(value as SortKey)}
-              onTimeRangeChange={(value) => setTimeRange(value as TimeRangeKey)}
-              onMinRatingsChange={setMinRatings}
-              onRetiredFilterChange={(value) => setRetiredFilter(value as RetiredFilter)}
-            />
-
-            <div className="catalog-grid">
-              <section className="list-panel" aria-label="Beer list">
-                <header className="list-toolbar">
-                  <p>{filteredBeers.length} beers match your filters</p>
-                  <p>
-                    {getSortLabel(sort)} • {getTimeRangeLabel(timeRange)}
-                  </p>
-                </header>
-
-                <section className="list" aria-label="Ranked beer list">
-                  {filteredBeers.length === 0 ? (
-                    <p className="empty">No beers found with the selected filters.</p>
-                  ) : (
-                    filteredBeers.map((beer, index) => (
-                      <BeerCard
-                        key={beer.id}
-                        beer={beer}
-                        rank={index + 1}
-                        displayRating={beer.displayRating}
-                        displayRatingsCount={beer.displayRatingsCount}
-                        weightedScore={beer.weightedScore}
-                        trendingScore={beer.trendingScore}
-                        addedCount={beer.addedCount}
-                        userRating={beer.myRating}
-                      />
-                    ))
-                  )}
-                </section>
-              </section>
-
-              <aside className="rating-panel" aria-label="Post your own beer rating">
-                <h2>Log your rating</h2>
-                <p className="panel-text">
-                  Rate any beer from this list to influence weighted and trending positions.
-                </p>
-
-                <form className="rating-form" onSubmit={handlePostRating}>
-                  <label className="field-label" htmlFor="beer-select">
-                    Beer
-                  </label>
-                  <select
-                    id="beer-select"
-                    className="select"
-                    value={selectedBeerId}
-                    onChange={(event) => setSelectedBeerId(Number(event.target.value))}
-                  >
-                    {beerOptions.map((beer) => (
-                      <option key={beer.id} value={beer.id}>
-                        {beer.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  <label className="field-label" htmlFor="rating-select">
-                    Your score
-                  </label>
-                  <select
-                    id="rating-select"
-                    className="select"
-                    value={draftRating}
-                    onChange={(event) => setDraftRating(Number(event.target.value))}
-                  >
-                    <option value={1}>1 / 5</option>
-                    <option value={2}>2 / 5</option>
-                    <option value={3}>3 / 5</option>
-                    <option value={4}>4 / 5</option>
-                    <option value={5}>5 / 5</option>
-                  </select>
-
-                  <button type="submit" className="post-button" disabled={isPosting}>
-                    {isPosting ? 'Posting...' : 'Post rating'}
-                  </button>
-                </form>
-
-                {postMessage ? <p className="post-message">{postMessage}</p> : null}
-                {isLoadingRatings ? <p className="api-status">Loading ratings...</p> : null}
-                {apiError ? <p className="api-error">{apiError}</p> : null}
-              </aside>
-            </div>
-          </section>
-        ) : (
-          <section id="breweries" className="breweries" aria-label="Brewery list">
-            {breweries.map(([name, details]) => (
-              <article className="brewery-item" key={name}>
-                <h3>{name}</h3>
+          <div className="catalog-grid">
+            <section className="list-panel" aria-label="Beer list">
+              <header className="list-toolbar">
+                <p>{filteredBeers.length} beers match your filters</p>
                 <p>
-                  {details.country} • {details.count} beer{details.count > 1 ? 's' : ''} in this list
+                  {getSortLabel(sort)} • {getTimeRangeLabel(timeRange)}
                 </p>
-                <p>{(details.totalWeightedScore / details.count).toFixed(2)} average weighted score</p>
-                <p>{details.totalRatings.toLocaleString()} total ratings in catalog</p>
-              </article>
-            ))}
-          </section>
-        )}
+              </header>
+
+              <section className="list" aria-label="Ranked beer list">
+                {filteredBeers.length === 0 ? (
+                  <p className="empty">No beers found with the selected filters.</p>
+                ) : (
+                  filteredBeers.map((beer, index) => (
+                    <BeerCard
+                      key={beer.id}
+                      beer={beer}
+                      rank={index + 1}
+                      displayRating={beer.displayRating}
+                      displayRatingsCount={beer.displayRatingsCount}
+                      weightedScore={beer.weightedScore}
+                      trendingScore={beer.trendingScore}
+                      addedCount={beer.addedCount}
+                      userRating={beer.myRating}
+                      onOpenDetails={() => setDetailsBeer(beer)}
+                    />
+                  ))
+                )}
+              </section>
+            </section>
+
+            <aside className="rating-panel" aria-label="Post your own beer rating">
+              <h2>Log your rating</h2>
+              <p className="panel-text">
+                Rate any beer from this list to influence weighted and trending positions.
+              </p>
+
+              <form className="rating-form" onSubmit={handlePostRating}>
+                <label className="field-label" htmlFor="beer-select">
+                  Beer
+                </label>
+                <select
+                  id="beer-select"
+                  className="select"
+                  value={selectedBeerId}
+                  onChange={(event) => setSelectedBeerId(Number(event.target.value))}
+                >
+                  {beerOptions.map((beer) => (
+                    <option key={beer.id} value={beer.id}>
+                      {beer.name}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="field-label" htmlFor="rating-select">
+                  Your score
+                </label>
+                <select
+                  id="rating-select"
+                  className="select"
+                  value={draftRating}
+                  onChange={(event) => setDraftRating(Number(event.target.value))}
+                >
+                  <option value={1}>1 / 5</option>
+                  <option value={2}>2 / 5</option>
+                  <option value={3}>3 / 5</option>
+                  <option value={4}>4 / 5</option>
+                  <option value={5}>5 / 5</option>
+                </select>
+
+                <button type="submit" className="post-button" disabled={isPosting}>
+                  {isPosting ? 'Posting...' : 'Post rating'}
+                </button>
+              </form>
+
+              {postMessage ? <p className="post-message">{postMessage}</p> : null}
+              {isLoadingRatings ? <p className="api-status">Loading ratings...</p> : null}
+              {apiError ? <p className="api-error">{apiError}</p> : null}
+            </aside>
+          </div>
+        </section>
 
         <section className="help" id="help" aria-label="Help and usage">
           <h2>How ranking works</h2>
@@ -569,6 +530,44 @@ function App() {
             major beer communities.
           </p>
         </section>
+
+        {detailsBeer ? (
+          <div
+            className="beer-modal-overlay"
+            role="presentation"
+            onClick={() => setDetailsBeer(null)}
+          >
+            <section
+              className="beer-modal"
+              aria-label="Beer description details"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button
+                type="button"
+                className="beer-modal-close"
+                onClick={() => setDetailsBeer(null)}
+                aria-label="Close details"
+              >
+                Close
+              </button>
+
+              <p className="eyebrow">Beer details</p>
+              <h3>{detailsBeer.name}</h3>
+              <p className="beer-modal-meta">
+                {detailsBeer.brewery} • {detailsBeer.style} • {detailsBeer.country}
+              </p>
+              <p className="beer-modal-tags">
+                {detailsBeer.abv.toFixed(1)}% ABV • {detailsBeer.ibu} IBU •{' '}
+                {detailsBeer.displayRatingsCount.toLocaleString()} ratings
+              </p>
+              <p className="beer-modal-description">{detailsBeer.description}</p>
+              <p className="beer-modal-ranking">
+                Avg {detailsBeer.displayRating.toFixed(2)} / Weighted {detailsBeer.weightedScore.toFixed(2)} /
+                Trending {detailsBeer.trendingScore.toFixed(2)}
+              </p>
+            </section>
+          </div>
+        ) : null}
       </main>
     </>
   )
