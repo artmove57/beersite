@@ -9,6 +9,8 @@ It shows top-rated beers using local mock data and simple client-side filters.
 - React
 - TypeScript
 - Plain CSS
+- Express
+- SQLite
 
 ## Features
 
@@ -16,7 +18,8 @@ It shows top-rated beers using local mock data and simple client-side filters.
 - Top Rated Beers page with short intro text
 - Two tabs: Beers and Breweries
 - Working filters for search, style, country, and sorting
-- Local mock dataset (no backend, no database, no external API)
+- Local mock beer catalog plus persisted user ratings in SQLite
+- Local API for posting and loading ratings (`/api/ratings`)
 - Responsive card layout for mobile and desktop
 
 ## How to run
@@ -25,15 +28,24 @@ It shows top-rated beers using local mock data and simple client-side filters.
 
    npm install
 
-2. Start development server:
+2. Start frontend + API together:
+
+   npm run dev:full
+
+   This starts:
+   - Vite app on http://localhost:5173
+   - Ratings API on http://localhost:3001
+
+3. Start frontend only (optional):
 
    npm run dev
 
-3. Build production bundle:
+4. Build production bundle:
 
    npm run build
 
 ## Notes
 
-- This project uses mock/local data only.
+- Beer metadata is mock/local data in the frontend.
+- User ratings are persisted in `server/data/ratings.db`.
 - This is an educational frontend project inspired by a beer rating page.

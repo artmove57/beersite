@@ -7,7 +7,34 @@ import { beers } from './data/beers'
 
 type TabKey = 'beers' | 'breweries'
 type SortKey = 'rating' | 'ratingsCount' | 'name'
+
+interface RatingSummaryEntry {
+  addedCount: number
+  addedAverage: number
+  userRating: number | null
+}
+
 const sections: NavTarget[] = ['home', 'top-rated', 'breweries', 'help']
+const clientIdStorageKey = 'beer-rate-client-id'
+
+function getOrCreateClientId() {
+  try {
+    const saved = window.localStorage.getItem(clientIdStorageKey)
+    if (saved) {
+      return saved
+    }
+
+    const generated =
+      typeof window.crypto?.randomUUID === 'function'
+        ? window.crypto.randomUUID()
+        : `client-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+
+    window.localStorage.setItem(clientIdStorageKey, generated)
+    return generated
+  } catch {
+    return `client-${Date.now()}-fallback`
+  }
+}
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('beers')
@@ -16,25 +43,91 @@ function App() {
   const [style, setStyle] = useState('Show All Styles')
   const [country, setCountry] = useState('Show All Countries')
   const [sort, setSort] = useState<SortKey>('rating')
-  const [userRatings, setUserRatings] = useState<Record<number, number>>({})
+  const [clientId] = useState(() => getOrCreateClientId())
+  const [ratingSummary, setRatingSummary] = useState<Record<number, RatingSummaryEntry>>({})
   const [selectedBeerId, setSelectedBeerId] = useState<number>(beers[0]?.id ?? 1)
   const [draftRating, setDraftRating] = useState<number>(5)
   const [postMessage, setPostMessage] = useState('')
+  const [isPosting, setIsPosting] = useState(false)
+  const [isLoadingRatings, setIsLoadingRatings] = useState(true)
+  const [apiError, setApiError] = useState('')
 
-  const handleRateBeer = useCallback((beerId: number, value: number) => {
-    setUserRatings((prev) => ({ ...prev, [beerId]: value }))
-  }, [])
+  const loadRatingsSummary = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/ratings/summary?clientId=${encodeURIComponent(clientId)}`)
+      if (!response.ok) {
+        throw new Error('Unable to fetch ratings summary')
+      }
 
-  const handlePostRating = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const selectedBeer = beers.find((beer) => beer.id === selectedBeerId)
-    if (!selectedBeer) {
-      return
+      const payload = (await response.json()) as {
+        byBeer?: Record<string, Partial<RatingSummaryEntry>>
+      }
+
+      const normalized: Record<number, RatingSummaryEntry> = {}
+
+      for (const [beerId, raw] of Object.entries(payload.byBeer ?? {})) {
+        const id = Number(beerId)
+        if (!Number.isInteger(id) || id <= 0) {
+          continue
+        }
+
+        const addedCount = Number(raw.addedCount ?? 0)
+        const addedAverage = Number(raw.addedAverage ?? 0)
+        const userRating = raw.userRating == null ? null : Number(raw.userRating)
+
+        normalized[id] = {
+          addedCount: Number.isFinite(addedCount) ? addedCount : 0,
+          addedAverage: Number.isFinite(addedAverage) ? addedAverage : 0,
+          userRating: Number.isFinite(userRating as number) ? (userRating as number) : null,
+        }
+      }
+
+      setRatingSummary(normalized)
+      setApiError('')
+    } catch {
+      setApiError('Ratings API is unavailable. Start it with npm run dev:full.')
+    } finally {
+      setIsLoadingRatings(false)
     }
+  }, [clientId])
 
-    handleRateBeer(selectedBeerId, draftRating)
-    setPostMessage(`Posted ${draftRating}/5 for ${selectedBeer.name}.`)
-  }
+  const handlePostRating = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+
+      const selectedBeer = beers.find((beer) => beer.id === selectedBeerId)
+      if (!selectedBeer) {
+        return
+      }
+
+      setIsPosting(true)
+      setPostMessage('')
+
+      try {
+        const response = await fetch('/api/ratings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            beerId: selectedBeerId,
+            score: draftRating,
+            clientId,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Unable to post rating')
+        }
+
+        await loadRatingsSummary()
+        setPostMessage(`Posted ${draftRating}/5 for ${selectedBeer.name}.`)
+      } catch {
+        setApiError('Could not post rating. Check that the API server is running.')
+      } finally {
+        setIsPosting(false)
+      }
+    },
+    [clientId, draftRating, loadRatingsSummary, selectedBeerId],
+  )
 
   const navigateToSection = useCallback((target: NavTarget) => {
     if (target === 'home' || target === 'top-rated') {
@@ -88,6 +181,10 @@ function App() {
   }, [navigateToSection])
 
   useEffect(() => {
+    void loadRatingsSummary()
+  }, [loadRatingsSummary])
+
+  useEffect(() => {
     if (!postMessage) {
       return
     }
@@ -118,23 +215,24 @@ function App() {
       return searchMatch && styleMatch && countryMatch
     })
 
-    const withUserRatings = result.map((beer) => {
-      const myRating = userRatings[beer.id]
-      const hasMyRating = typeof myRating === 'number'
-      const displayRatingsCount = beer.ratingsCount + (hasMyRating ? 1 : 0)
-      const displayRating = hasMyRating
-        ? (beer.rating * beer.ratingsCount + myRating) / displayRatingsCount
-        : beer.rating
+    const withApiRatings = result.map((beer) => {
+      const summary = ratingSummary[beer.id]
+      const addedCount = summary?.addedCount ?? 0
+      const addedAverage = summary?.addedAverage ?? 0
+
+      const displayRatingsCount = beer.ratingsCount + addedCount
+      const totalScore = beer.rating * beer.ratingsCount + addedAverage * addedCount
+      const displayRating = totalScore / displayRatingsCount
 
       return {
         ...beer,
         displayRating,
         displayRatingsCount,
-        myRating,
+        myRating: summary?.userRating ?? undefined,
       }
     })
 
-    return withUserRatings.sort((a, b) => {
+    return withApiRatings.sort((a, b) => {
       if (sort === 'name') {
         return a.name.localeCompare(b.name)
       }
@@ -145,7 +243,7 @@ function App() {
 
       return b.displayRating - a.displayRating
     })
-  }, [search, style, country, sort, userRatings])
+  }, [search, style, country, sort, ratingSummary])
 
   const breweries = useMemo(() => {
     const grouped = new Map<string, { country: string; count: number }>()
@@ -172,7 +270,7 @@ function App() {
             This page shows highly rated beers based on average user ratings and number of
             reviews.
           </p>
-          <p className="note">Demo project: all data is local mock data.</p>
+          <p className="note">Your posted ratings are saved in a local SQLite database.</p>
         </section>
 
         <Tabs activeTab={activeTab} onChange={setActiveTab} />
@@ -225,11 +323,13 @@ function App() {
                   <option value={5}>5 / 5</option>
                 </select>
 
-                <button type="submit" className="post-button">
-                  Post rating
+                <button type="submit" className="post-button" disabled={isPosting}>
+                  {isPosting ? 'Posting...' : 'Post rating'}
                 </button>
               </form>
               {postMessage ? <p className="post-message">{postMessage}</p> : null}
+              {isLoadingRatings ? <p className="api-status">Loading ratings...</p> : null}
+              {apiError ? <p className="api-error">{apiError}</p> : null}
             </section>
 
             <section className="list" aria-label="Beer list">

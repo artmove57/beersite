@@ -214,9 +214,26 @@ nav[data-open='true'] .nav-list {
   background: #0d416e;
 }
 
+.post-button:disabled {
+  background: #7c96af;
+  border-color: #7c96af;
+  cursor: not-allowed;
+}
+
 .post-message {
   margin: 10px 0 0;
   color: #25567f;
+  font-weight: 600;
+}
+
+.api-status {
+  margin: 8px 0 0;
+  color: #5d738b;
+}
+
+.api-error {
+  margin: 8px 0 0;
+  color: #a03535;
   font-weight: 600;
 }
 
