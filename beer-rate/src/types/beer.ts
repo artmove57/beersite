@@ -4,6 +4,8 @@ export interface Beer {
   brewery: string
   style: string
   country: string
+  abv: number
+  ibu: number
   rating: number
   ratingsCount: number
   description: string

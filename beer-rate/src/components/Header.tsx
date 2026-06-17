@@ -8,10 +8,10 @@ interface HeaderProps {
 }
 
 const links: Array<{ label: string; target: NavTarget }> = [
-  { label: 'Home', target: 'home' },
-  { label: 'Top Rated', target: 'top-rated' },
+  { label: 'Discover', target: 'home' },
+  { label: 'Top 250', target: 'top-rated' },
   { label: 'Breweries', target: 'breweries' },
-  { label: 'Help', target: 'help' },
+  { label: 'Guide', target: 'help' },
 ]
 
 export function Header({ activeSection, onNavigate }: HeaderProps) {
@@ -33,7 +33,7 @@ export function Header({ activeSection, onNavigate }: HeaderProps) {
             handleNavigate('home')
           }}
         >
-          BeerRate
+          BeerRate Atlas
         </a>
         <button
           className="menu-toggle"

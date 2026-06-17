@@ -15,7 +15,7 @@ export function Tabs({ activeTab, onChange }: TabsProps) {
         aria-selected={activeTab === 'beers'}
         onClick={() => onChange('beers')}
       >
-        Beers
+        Top Beers
       </button>
       <button
         className={activeTab === 'breweries' ? 'tab active' : 'tab'}
