@@ -28,6 +28,21 @@ const beerCatalog = [
   { id: 13, name: 'Old Script Barrel', style: 'Barleywine' },
   { id: 14, name: 'Maple Night Shift', style: 'Stout' },
   { id: 15, name: 'Fresh Chalk IPA', style: 'IPA' },
+  { id: 16, name: 'Fog Harbor Double', style: 'Double IPA' },
+  { id: 17, name: 'Silver Grove Saison', style: 'Saison' },
+  { id: 18, name: 'Copper Ember Brown', style: 'Brown Ale' },
+  { id: 19, name: 'Hearthlight Tripel', style: 'Tripel' },
+  { id: 20, name: 'Lemon Mill Wheat', style: 'Wheat Beer' },
+  { id: 21, name: 'Ridgeway Pale', style: 'Pale Ale' },
+  { id: 22, name: 'Northline Pilsner', style: 'Pilsner' },
+  { id: 23, name: 'Bramble Orchard Cider', style: 'Cider' },
+  { id: 24, name: 'Honey Raven Mead', style: 'Mead' },
+  { id: 25, name: 'Velvet Eclipse Stout', style: 'Stout' },
+  { id: 26, name: 'Oak District Porter', style: 'Porter' },
+  { id: 27, name: 'Neon Field Sour', style: 'Sour' },
+  { id: 28, name: 'Kingfisher Kolsch', style: 'Kolsch' },
+  { id: 29, name: 'Obsidian Tide Barleywine', style: 'Barleywine' },
+  { id: 30, name: 'Prairie Bloom Lager', style: 'Lager' },
 ]
 
 await fs.mkdir(dataDir, { recursive: true })
